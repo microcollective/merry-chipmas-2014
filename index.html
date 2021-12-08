@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		
+		
+        <!-- Hammer reload -->
+          <script>
+            setInterval(function(){
+              try {
+                if(typeof ws != 'undefined' && ws.readyState == 1){return true;}
+                ws = new WebSocket('ws://'+(location.host || 'localhost').split(':')[0]+':35353')
+                ws.onopen = function(){ws.onclose = function(){document.location.reload()}}
+                ws.onmessage = function(){
+                  var links = document.getElementsByTagName('link'); 
+                    for (var i = 0; i < links.length;i++) { 
+                    var link = links[i]; 
+                    if (link.rel === 'stylesheet' && !link.href.match(/typekit/)) { 
+                      href = link.href.replace(/((&|\?)hammer=)[^&]+/,''); 
+                      link.href = href + (href.indexOf('?')>=0?'&':'?') + 'hammer='+(new Date().valueOf());
+                    }
+                  }
+                }
+              }catch(e){}
+            }, 1000)
+          </script>
+        <!-- /Hammer reload -->
+      
+		
+		<link rel='stylesheet' href='assets/css/pure-min.css'>
+<link rel='stylesheet' href='assets/css/grids-responsive-min.css'>
+<link rel='stylesheet' href='assets/css/style.css'>
+		<script src='assets/js/d3.min.js'></script>
+<script src='assets/js/app.js'></script>
+<script src='assets/js/ThinPlayer.js'></script>
+		
+		<script src="//use.typekit.net/hpt3gbq.js"></script>
+		<script>try{Typekit.load();}catch(e){}</script>
+		
+		<link href="assets/favicon.ico" rel="shortcut icon">
+		<link href="assets/apple-touch-icon.png" rel="apple-touch-icon">
+		
+		<title>Merry Chipmas 2014</title>
+	  
+	</head>
+	
+	<body>
+		
+		<header>
+			<div class="wrap">
+				<h1>Merry Chipmas 2014</h1>
+			</div>
+		</header>
+	
+	<section>
+		<div class="wrap">
+			<div class="pure-g">
+				<div class="pure-u-1-1">
+					<img class="pure-img" src="./assets/final.png">
+				</div>
+				<div class="pure-u-1-1">
+					<div id="player"></div>
+				</div>
+				<div class="pure-u-1-1">
+					<p>
+						<a href="./assets/Merry Chipmas 2014.zip">Download Merry Chipmas 2014!</a><br>
+						Thanks to everyone who sent their tracks in, late or not ;)<br>
+						<br>
+						Tracklist:
+					</p>
+					<ol class="tracklist">
+						
+					</ol>
+				</div>
+			</div>
+		</div>
+	</section>
+	
+	
+	<script>
+		
+		function bestCandidateSampler(width, height, numCandidates, numSamplesMax) {
+		  var numSamples = 0;
+		
+		  var quadtree = d3.geom.quadtree()
+		      .extent([[0, 0], [width, height]])
+		      ([[Math.random() * width, Math.random() * height]]);
+		
+		  return function() {
+		    if (++numSamples > numSamplesMax) return;
+		    var bestCandidate, bestDistance = 0;
+		    for (var i = 0; i < numCandidates; ++i) {
+		      var c = [Math.random() * width, Math.random() * height],
+		          d = distance(search(c[0], c[1]), c);
+		      if (d > bestDistance) {
+		        bestDistance = d;
+		        bestCandidate = c;
+		      }
+		    }
+		    quadtree.add(bestCandidate);
+		    return bestCandidate;
+		  };
+		
+		  function distance(a, b) {
+		    var dx = a[0] - b[0],
+		        dy = a[1] - b[1];
+		    return dx * dx + dy * dy;
+		  };
+		
+		  // Find the closest node to the specified point.
+		  function search(x, y) {
+		    var x0 = 0,
+		        y0 = 0,
+		        x3 = width,
+		        y3 = width,
+		        minDistance2 = Infinity,
+		        closestPoint;
+		
+		    (function find(node, x1, y1, x2, y2) {
+		      var point;
+		
+		      // stop searching if this cell can’t contain a closer node
+		      if (x1 > x3 || y1 > y3 || x2 < x0 || y2 < y0) return;
+		
+		      // visit this point
+		      if (point = node.point) {
+		        var dx = x - point[0],
+		            dy = y - point[1],
+		            distance2 = dx * dx + dy * dy;
+		        if (distance2 < minDistance2) {
+		          var distance = Math.sqrt(minDistance2 = distance2);
+		          x0 = x - distance, y0 = y - distance;
+		          x3 = x + distance, y3 = y + distance;
+		          closestPoint = point;
+		        }
+		      }
+		
+		      // bisect the current node
+		      var children = node.nodes,
+		          xm = (x1 + x2) * .5,
+		          ym = (y1 + y2) * .5,
+		          right = x > xm,
+		          below = y > ym;
+		
+		      // visit closest cell first
+		      if (node = children[below << 1 | right]) find(node, right ? xm : x1, below ? ym : y1, right ? x2 : xm, below ? y2 : ym);
+		      if (node = children[below << 1 | !right]) find(node, right ? x1 : xm, below ? ym : y1, right ? xm : x2, below ? y2 : ym);
+		      if (node = children[!below << 1 | right]) find(node, right ? xm : x1, below ? y1 : ym, right ? x2 : xm, below ? ym : y2);
+		      if (node = children[!below << 1 | !right]) find(node, right ? x1 : xm, below ? y1 : ym, right ? xm : x2, below ? ym : y2);
+		    })(quadtree, x0, y0, x3, y3);
+		
+		    return closestPoint;
+		  }
+		}
+		
+		function doStars() {
+		
+			var sample = bestCandidateSampler(window.innerWidth, window.innerHeight, 10, 100);
+			
+			d3.selectAll("div.star").remove();
+			
+			for (var i = 0; i < 200; ++i) {
+			    var s = sample();
+			    if (!s) continue;
+			    var div = document.createElement('div');
+			    div.classList.add('star');
+			    div.style.left = s[0] + 'px';
+			    div.style.top = s[1] + 'px';
+			    div.style.transition = '300ms all';
+			    div.style.height = div.style.width = '4px';
+			    div.style.backgroundColor = 'rgba(255,255,255,0.2)';
+			    div.style.borderRadius = '50%';
+			    div.style.position = 'fixed';
+			    div.style.zIndex = '-1';
+			    document.body.appendChild(div);
+			}
+		}
+		
+		window.onresize = doStars;
+		doStars();
+		
+		
+		request = new XMLHttpRequest();
+		request.open('GET', './assets/json/tracklist.json', true);
+		
+		request.onload = function() {
+			if(request.status >= 200 && request.status < 400) {
+				data = JSON.parse(request.responseText);
+				continueLoad(data);
+			} else {
+				console.error(request);
+			}
+		};
+		
+		request.onerror = function() {
+			console.error(request);
+		};
+		request.send();
+		
+		var tP;
+		
+		function continueLoad(tracks) {
+			
+			var tracklist = document.getElementsByClassName('tracklist')[0];
+			var sources = [];
+			tracks.forEach(function(track, i) {
+				var li = document.createElement('li');
+				li.innerHTML = '<b>' + track.title + '</b> by <b>' + track.author + '</b>';
+				tracklist.appendChild(li);
+				sources.push('./assets/audio/' + (i+1) + '.mp3');
+			});
+		
+			var tP = new ThinPlayer({
+					src: sources,
+					drag: true,
+					autoplay: true,
+					repeat: true,
+					element: '#player'
+				});
+			
+			var time = document.getElementById('tp-time');
+			time.style.cursor = 'pointer';
+			time.style.zIndex = '10';
+			time.addEventListener('click', function() {
+				console.log(tP.isPlaying());
+				if(tP.isPlaying()) tP.pause();
+				else tP.play();
+			});
+		}
+	</script>
+</body>
+
+</html>
